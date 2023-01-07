@@ -1,0 +1,21 @@
+---
+- name: Check if io.elementary.vala-lint is installed
+  command: which io.elementary.vala-lint
+  ignore_errors: true
+  changed_when: no
+  register: vala_lint_check
+
+- name: Fetch git repo
+  git:
+    repo: "https://github.com/vala-lang/vala-lint.git"
+    dest: /tmp/vala-lint
+  when: vala_lint_check.rc == 1
+
+- name: Build io.elementary.vala-lint
+  shell: cd /tmp/vala-lint && meson build --prefix=/usr
+  when: vala_lint_check.rc == 1
+
+- name: Install io.elementary.vala-lint
+  become: yes
+  shell: cd /tmp/vala-lint/build && ninja install
+  when: vala_lint_check.rc == 1

@@ -1,0 +1,131 @@
+---
+- name: Fedora Configuration
+  gather_facts: true
+  hosts: all
+  tasks:
+    # System configuration
+    - name: Set hostname
+      become: yes
+      template:
+        src: hostname.j2
+        dest: /etc/hostname
+    - name: Update /etc/hosts IPv4 entry
+      become: yes
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1'
+        line: 127.0.0.1 localhost {{ hostname }}
+    - name: Update /etc/hosts IPv6 entry
+      become: yes
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^::1'
+        line: ::1 localhost {{ hostname }}
+    - name: Create ~/.ssh directory
+      file:
+        path: "/home/{{ user_name }}/.ssh"
+        state: directory
+        mode: '0755'
+    - name: Generate OpenSSH keypair
+      openssh_keypair:
+        path: "/home/{{ user_name }}/.ssh/id_rsa"
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+
+    # Application and package installation prerequisites
+    - name: Install Microsoft GPG key
+      become: yes
+      rpm_key:
+        key: https://packages.microsoft.com/keys/microsoft.asc
+        state: present
+    - name: Add VSCode YUM repository
+      become: yes
+      yum_repository:
+        name: code
+        description: Visual Studio Code
+        baseurl: https://packages.microsoft.com/yumrepos/vscode
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+        file: external_repos
+
+    # Install applications and packages
+    - name: Install dnf packages
+      become: yes
+      dnf:
+        name:
+          - code
+          - curl
+          - flatpak-builder
+          - git
+          - libvala-devel
+          - meson
+          - neofetch
+          - ninja-build
+          - open-sans-fonts
+          - vala
+          - vim
+        state: present
+        update_cache: yes
+
+    # Configure applications
+    - name: Configure git
+      template:
+        src: .gitconfig.j2
+        dest: "/home/{{ user_name }}/.gitconfig"
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+    - name: Configure vim
+      template:
+        src: .vimrc.j2
+        dest: "/home/{{ user_name }}/.vimrc"
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+    - name: Add Flathub remote
+      flatpak_remote:
+        name: flathub
+        state: present
+        flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
+    - name: Install VSCode extensions
+      include_role:
+        name: gantsign.visual-studio-code-extensions
+        apply:
+          become: yes
+    - name: Install vala-lint
+      include_role:
+        name: vala-lint
+      
+    # Configure GNOME
+    - name: Set font
+      include_role:
+        name: petermosmans.customize-gnome
+        apply:
+          become: yes
+
+  vars:
+    user_name: avojak
+    user_group: avojak
+    user_full_name: Andrew Vojak
+    user_email_address: andrew.vojak@gmail.com
+    hostname: fedora
+    users:
+      - username: "{{ user_name }}"
+        visual_studio_code_extensions:
+          - prince781.vala
+          - ms-azuretools.vscode-docker
+          - mrorz.language-gettext
+          - mesonbuild.mesonbuild
+          - surajbarkale.ninja
+          - ms-python.python
+          - samuelcolvin.jinjahtml
+    gnome_extensions: []
+    gnome_gsettings:
+      - schema: org.gnome.desktop.interface
+        key: clock-format
+        value: '"12h"'
+      - schema: org.gnome.desktop.interface
+        key: font-name
+        value: '"Open Sans 11"'
+      - schema: org.gnome.desktop.interface
+        key: document-font-name
+        value: '"Open Sans 11"'

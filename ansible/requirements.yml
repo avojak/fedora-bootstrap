@@ -1,0 +1,7 @@
+---
+roles:
+  - name: gantsign.visual-studio-code-extensions
+  - name: petermosmans.customize-gnome
+collections:
+  - name: community.general
+
