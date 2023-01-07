@@ -48,6 +48,14 @@
         enabled: yes
         gpgkey: https://packages.microsoft.com/keys/microsoft.asc
         file: external_repos
+    - name: Add YUM repository for vala-language-server
+      become: yes
+      yum_repository:
+        name: code
+        description: Visual Studio Code
+        baseurl: https://download.opensuse.org/repositories/home:Prince781/Fedora_37/home:Prince781.repo
+        enabled: yes
+        file: external_repos
 
     # Install applications and packages
     - name: Install dnf packages
@@ -64,6 +72,7 @@
           - ninja-build
           - open-sans-fonts
           - vala
+          - vala-language-server
           - vim
         state: present
         update_cache: yes
