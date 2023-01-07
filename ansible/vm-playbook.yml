@@ -1,0 +1,11 @@
+---
+- import_playbook: playbook.yml
+- name: Fedora VM Configuration
+  gather_facts: true
+  hosts: all
+  tasks:
+    - name: Install VMWare Tools
+      become: yes
+      dnf:
+        name: open-vm-tools-desktop
+        state: present
